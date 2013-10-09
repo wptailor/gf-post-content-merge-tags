@@ -1,6 +1,6 @@
 <?php
 /**
-* Add Support for Gravity Form Merge Tags in your Post Content (when an entry ID is passed)
+* Gravity Form Merge Tags in your Post Content (when an entry ID is passed)
 * http://gravitywiz.com/
 * 
 * Video:        http://screencast.com/t/g6Y12zOf4
