@@ -3,8 +3,9 @@
 * Add Support for Gravity Form Merge Tags in your Post Content (when an entry ID is passed)
 * http://gravitywiz.com/
 * 
-* Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting 
-* to inlude this parameter: 'eid={entry_id}'. You can then use any entry-based merge tag in your post content.
+* Video:        http://screencast.com/t/g6Y12zOf4
+* Description:  Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting to 
+*               include this parameter: 'eid={entry_id}'. You can then use any entry-based merge tag in your post content.
 * 
 */
 class GWPostContentMergeTags {
