@@ -18,13 +18,30 @@
 class GW_Post_Content_Merge_Tags {
     
     public static $_entry = null;
-    
-    function __construct() {
+
+    private static $instance = null;
+
+    public static function get_instance( $args = array() ) {
+
+        if( self::$instance == null )
+            self::$instance = new self( $args );
+
+        return self::$instance;
+    }
+
+    function __construct( $args ) {
         
         if( ! class_exists( 'GFForms' ) )
             return;
 
+        $this->_args = wp_parse_args( $args, array(
+            'auto_append_eid' => false // true, false or array of form IDs
+        ) );
+
         add_filter( 'the_content', array( $this, 'replace_merge_tags' ) );
+
+        if( ! empty( $this->_args['auto_append_eid'] ) )
+            add_filter( 'gform_confirmation', array( $this, 'append_eid_parameter' ), 20, 3 );
 
     }
     
@@ -69,6 +86,16 @@ class GW_Post_Content_Merge_Tags {
         return $text;
     }
 
+    function append_eid_parameter( $confirmation, $form, $entry ) {
+
+        if( ! $this->is_auto_eid_enabled( $form ) || ! isset( $confirmation['redirect'] ) )
+            return $confirmation;
+
+        $confirmation['redirect'] = add_query_arg( array( 'eid' => $entry['id'] ), $confirmation['redirect'] );
+
+        return $confirmation;
+    }
+
     function get_entry() {
         
         if( ! self::$_entry ) {
@@ -103,7 +130,26 @@ class GW_Post_Content_Merge_Tags {
 
         return false;
     }
+
+    function is_auto_eid_enabled( $form ) {
+
+        $auto_append_eid = $this->_args['auto_append_eid'];
+
+        if( is_bool( $auto_append_eid ) && $auto_append_eid === true )
+            return true;
+
+        if( is_array( $auto_append_eid ) && in_array( $form['id'], $auto_append_eid ) )
+            return true;
+
+        return false;
+    }
     
 }
 
-new GW_Post_Content_Merge_Tags();
+function gw_post_content_merge_tags( $args = array() ) {
+    return GW_Post_Content_Merge_Tags::get_instance( $args );
+}
+
+gw_post_content_merge_tags( array(
+    'auto_append_eid' => true
+) );
