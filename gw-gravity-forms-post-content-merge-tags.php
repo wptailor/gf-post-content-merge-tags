@@ -35,13 +35,19 @@ class GW_Post_Content_Merge_Tags {
             return;
 
         $this->_args = wp_parse_args( $args, array(
-            'auto_append_eid' => false // true, false or array of form IDs
+            'auto_append_eid' => false, // true, false or array of form IDs
+            'encrypt_eid'     => false
         ) );
 
         add_filter( 'the_content', array( $this, 'replace_merge_tags' ) );
 
-        if( ! empty( $this->_args['auto_append_eid'] ) )
+        if( ! empty( $this->_args['auto_append_eid'] ) ) {
             add_filter( 'gform_confirmation', array( $this, 'append_eid_parameter' ), 20, 3 );
+        }
+
+        if( $this->_args['encrypt_eid'] ) {
+            add_filter( 'gform_confirmation', array( $this, 'encrypt_eid_parameter' ), 20, 3 );
+        }
 
     }
     
@@ -68,14 +74,30 @@ class GW_Post_Content_Merge_Tags {
         foreach( $matches as $match ) {
 
             list( $search, $field_label ) = $match;
+
             foreach( $form['fields'] as $field ) {
 
+                $full_input_id = false;
                 $matches_admin_label = rgar( $field, 'adminLabel' ) == $field_label;
-                $matches_field_label = GFFormsModel::get_label( $field ) == $field_label;
+                $matches_field_label = false;
+
+                if( is_array( $field['inputs'] ) ) {
+                    foreach( $field['inputs'] as $input ) {
+                        if( GFFormsModel::get_label( $field, $input['id'] ) == $field_label ) {
+                            $matches_field_label = true;
+                            $input_id = $input['id'];
+                            break;
+                        }
+                    }
+                } else {
+                    $matches_field_label = GFFormsModel::get_label( $field ) == $field_label;
+                    $input_id = $field['id'];
+                }
+
                 if( ! $matches_admin_label && ! $matches_field_label )
                     continue;
 
-                $replace = sprintf( '{%s:%d}', $field_label, $field['id'] );
+                $replace = sprintf( '{%s:%s}', $field_label, (string) $input_id );
                 $text = str_replace( $search, $replace, $text );
 
                 break;
@@ -92,6 +114,19 @@ class GW_Post_Content_Merge_Tags {
             return $confirmation;
 
         $confirmation['redirect'] = add_query_arg( array( 'eid' => $entry['id'] ), $confirmation['redirect'] );
+
+        return $confirmation;
+    }
+
+    function encrypt_eid_parameter( $confirmation, $form, $entry ) {
+
+        if( ! isset( $confirmation['redirect'] ) ) {
+            return $confirmation;
+        }
+
+        $encrypted_eid = is_callable( array( 'GFCommon', 'encrypt' ) ) ? GFCommon::encrypt( $entry['id'] ) : $entry['id'];
+
+        $confirmation['redirect'] = add_query_arg( array( 'eid' => $encrypted_eid ), $confirmation['redirect'] );
 
         return $confirmation;
     }
@@ -118,17 +153,29 @@ class GW_Post_Content_Merge_Tags {
     function get_entry_id() {
 
         $entry_id = rgget( 'eid' );
-        if( $entry_id )
-            return $entry_id;
+        if( $entry_id ) {
+            return $this->maybe_decrypt_entry_id( $entry_id );
+        }
 
         $post = get_post();
-        if( $post )
+        if( $post ) {
             $entry_id = get_post_meta( $post->ID, '_gform-entry-id', true );
+        }
 
-        if( $entry_id )
+        return $entry_id ? $entry_id : false;
+    }
+
+    function maybe_decrypt_entry_id( $entry_id ) {
+
+        if( ! $entry_id ) {
+            return null;
+        } else if( intval( $entry_id ) > 0 ) {
             return $entry_id;
+        } else {
+            $entry_id = is_callable( array( 'GFCommon', 'decrypt' ) ) ? GFCommon::decrypt( $entry_id ) : $entry_id;
+            return intval( $entry_id );
+        }
 
-        return false;
     }
 
     function is_auto_eid_enabled( $form ) {
@@ -151,5 +198,6 @@ function gw_post_content_merge_tags( $args = array() ) {
 }
 
 gw_post_content_merge_tags( array(
-    'auto_append_eid' => true
+    'auto_append_eid' => true,
+    'encrypt_eid'     => true
 ) );
