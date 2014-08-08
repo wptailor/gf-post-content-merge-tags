@@ -1,14 +1,14 @@
 <?php
 /**
-* Gravity Wiz // Gravity Forms Post Content Merge Tags 
-* 
+* Gravity Wiz // Gravity Forms Post Content Merge Tags
+*
 * Adds support for using Gravity Form merge tags in your post content. This functionality requires that the entry ID is
 * is passed to the post via the "eid" parameter.
-* 
-* Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting to 
+*
+* Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting to
 * include this parameter: 'eid={entry_id}'. You can then use any entry-based merge tag in your post content.
-* 
-* @version	 1.0
+*
+* @version   1.0
 * @author    David Smith <david@gravitywiz.com>
 * @license   GPL-2.0+
 * @link      http://gravitywiz.com/...
@@ -16,7 +16,7 @@
 * @copyright 2014 Gravity Wiz
 */
 class GW_Post_Content_Merge_Tags {
-    
+
     public static $_entry = null;
 
     private static $instance = null;
@@ -30,7 +30,7 @@ class GW_Post_Content_Merge_Tags {
     }
 
     function __construct( $args ) {
-        
+
         if( ! class_exists( 'GFForms' ) )
             return;
 
@@ -50,24 +50,24 @@ class GW_Post_Content_Merge_Tags {
         }
 
     }
-    
+
     function replace_merge_tags( $post_content ) {
-        
+
         $entry = $this->get_entry();
         if( ! $entry )
             return $post_content;
-        
+
         $form = GFFormsModel::get_form_meta( $entry['form_id'] );
 
         $post_content = $this->replace_field_label_merge_tags( $post_content, $form );
         $post_content = GFCommon::replace_variables( $post_content, $form, $entry, false, false, false );
-        
+
         return $post_content;
     }
 
     function replace_field_label_merge_tags( $text, $form ) {
 
-        preg_match_all( '/{([^:]+)}/', $text, $matches, PREG_SET_ORDER );
+        preg_match_all( '/{([^:]+?)}/', $text, $matches, PREG_SET_ORDER );
         if( empty( $matches ) )
             return $text;
 
@@ -132,21 +132,21 @@ class GW_Post_Content_Merge_Tags {
     }
 
     function get_entry() {
-        
+
         if( ! self::$_entry ) {
-            
+
             $entry_id = $this->get_entry_id();
             if( ! $entry_id )
                 return false;
-            
+
             $entry = GFFormsModel::get_lead( $entry_id );
             if( empty( $entry ) )
                 return false;
-                
+
             self::$_entry = $entry;
-                
+
         }
-        
+
         return self::$_entry;
     }
 
@@ -190,7 +190,7 @@ class GW_Post_Content_Merge_Tags {
 
         return false;
     }
-    
+
 }
 
 function gw_post_content_merge_tags( $args = array() ) {
