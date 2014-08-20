@@ -1,20 +1,20 @@
 <?php
 /**
-* Gravity Wiz // Gravity Forms Post Content Merge Tags
-*
-* Adds support for using Gravity Form merge tags in your post content. This functionality requires that the entry ID is
-* is passed to the post via the "eid" parameter.
-*
-* Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting to
-* include this parameter: 'eid={entry_id}'. You can then use any entry-based merge tag in your post content.
-*
-* @version   1.0
-* @author    David Smith <david@gravitywiz.com>
-* @license   GPL-2.0+
-* @link      http://gravitywiz.com/...
-* @video     http://screencast.com/t/g6Y12zOf4
-* @copyright 2014 Gravity Wiz
-*/
+ * Gravity Wiz // Gravity Forms Post Content Merge Tags
+ *
+ * Adds support for using Gravity Form merge tags in your post content. This functionality requires that the entry ID is
+ * is passed to the post via the "eid" parameter.
+ *
+ * Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting to
+ * include this parameter: 'eid={entry_id}'. You can then use any entry-based merge tag in your post content.
+ *
+ * @version   1.0
+ * @author    David Smith <david@gravitywiz.com>
+ * @license   GPL-2.0+
+ * @link      http://gravitywiz.com/...
+ * @video     http://screencast.com/t/g6Y12zOf4
+ * @copyright 2014 Gravity Wiz
+ */
 class GW_Post_Content_Merge_Tags {
 
     public static $_entry = null;
@@ -35,18 +35,14 @@ class GW_Post_Content_Merge_Tags {
             return;
 
         $this->_args = wp_parse_args( $args, array(
-            'auto_append_eid' => false, // true, false or array of form IDs
-            'encrypt_eid'     => false
+            'auto_append_eid' => true, // true, false or array of form IDs
+            'encrypt_eid'     => false,
         ) );
 
-        add_filter( 'the_content', array( $this, 'replace_merge_tags' ) );
+        add_filter( 'the_content', array( $this, 'replace_merge_tags' ), 1 );
 
         if( ! empty( $this->_args['auto_append_eid'] ) ) {
             add_filter( 'gform_confirmation', array( $this, 'append_eid_parameter' ), 20, 3 );
-        }
-
-        if( $this->_args['encrypt_eid'] ) {
-            add_filter( 'gform_confirmation', array( $this, 'encrypt_eid_parameter' ), 20, 3 );
         }
 
     }
@@ -110,25 +106,37 @@ class GW_Post_Content_Merge_Tags {
 
     function append_eid_parameter( $confirmation, $form, $entry ) {
 
-        if( ! $this->is_auto_eid_enabled( $form ) || ! isset( $confirmation['redirect'] ) )
-            return $confirmation;
+        $is_ajax_redirect = is_string( $confirmation ) && strpos( $confirmation, 'gformRedirect' );
+        $is_redirect      = is_array( $confirmation ) && isset( $confirmation['redirect'] );
 
-        $confirmation['redirect'] = add_query_arg( array( 'eid' => $entry['id'] ), $confirmation['redirect'] );
+        if( ! $this->is_auto_eid_enabled( $form ) || ! ( $is_ajax_redirect || $is_redirect ) ) {
+            return $confirmation;
+        }
+
+        $eid = $this->prepare_eid( $entry['id'] );
+
+        if( $is_ajax_redirect ) {
+            preg_match_all( '/gformRedirect.+?(http.+?)(?=\'|")/', $confirmation, $matches, PREG_SET_ORDER );
+            list( $full_match, $url ) = $matches[0];
+            $redirect_url = add_query_arg( array( 'eid' => $eid ), $url );
+            $confirmation = str_replace( $url, $redirect_url, $confirmation );
+        } else {
+            $redirect_url             = add_query_arg( array( 'eid' => $eid ), $confirmation['redirect'] );
+            $confirmation['redirect'] = $redirect_url;
+        }
 
         return $confirmation;
     }
 
-    function encrypt_eid_parameter( $confirmation, $form, $entry ) {
+    function prepare_eid( $entry_id ) {
 
-        if( ! isset( $confirmation['redirect'] ) ) {
-            return $confirmation;
+        $eid = $entry_id;
+
+        if( $this->_args['encrypt_eid'] && is_callable( array( 'GFCommon', 'encrypt' ) ) ) {
+            $eid = rawurlencode( GFCommon::encrypt( $eid ) );
         }
 
-        $encrypted_eid = is_callable( array( 'GFCommon', 'encrypt' ) ) ? GFCommon::encrypt( $entry['id'] ) : $entry['id'];
-
-        $confirmation['redirect'] = add_query_arg( array( 'eid' => $encrypted_eid ), $confirmation['redirect'] );
-
-        return $confirmation;
+        return $eid;
     }
 
     function get_entry() {
@@ -169,9 +177,11 @@ class GW_Post_Content_Merge_Tags {
 
         if( ! $entry_id ) {
             return null;
-        } else if( intval( $entry_id ) > 0 ) {
+        } else if( is_numeric( $entry_id ) && intval( $entry_id ) > 0 ) {
             return $entry_id;
         } else {
+            // gEYs6Cqzh1akKc7Y4RGkV8HtcJqQZRmNH+ONxuFEvXM
+            // 0FSCGpzzmt+4Y05fFsJ4ipRZfqD/zdi2ecEeMMRKCjc=
             $entry_id = is_callable( array( 'GFCommon', 'decrypt' ) ) ? GFCommon::decrypt( $entry_id ) : $entry_id;
             return intval( $entry_id );
         }
@@ -197,7 +207,4 @@ function gw_post_content_merge_tags( $args = array() ) {
     return GW_Post_Content_Merge_Tags::get_instance( $args );
 }
 
-gw_post_content_merge_tags( array(
-    'auto_append_eid' => true,
-    'encrypt_eid'     => true
-) );
+gw_post_content_merge_tags();
