@@ -8,7 +8,7 @@
  * Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting to
  * include this parameter: 'eid={entry_id}'. You can then use any entry-based merge tag in your post content.
  *
- * @version   1.0
+ * @version   1.1
  * @author    David Smith <david@gravitywiz.com>
  * @license   GPL-2.0+
  * @link      http://gravitywiz.com/...
@@ -40,6 +40,7 @@ class GW_Post_Content_Merge_Tags {
         ) );
 
         add_filter( 'the_content', array( $this, 'replace_merge_tags' ), 1 );
+        add_filter( 'gform_replace_merge_tags', array( $this, 'replace_encrypt_entry_id_merge_tag' ), 10, 3 );
 
         if( ! empty( $this->_args['auto_append_eid'] ) ) {
             add_filter( 'gform_confirmation', array( $this, 'append_eid_parameter' ), 20, 3 );
@@ -104,6 +105,10 @@ class GW_Post_Content_Merge_Tags {
         return $text;
     }
 
+    function replace_encrypt_entry_id_merge_tag( $text, $form, $entry ) {
+        return str_replace( '{encrypted_entry_id}', $this->prepare_eid( $entry['id'], true ), $text );
+    }
+
     function append_eid_parameter( $confirmation, $form, $entry ) {
 
         $is_ajax_redirect = is_string( $confirmation ) && strpos( $confirmation, 'gformRedirect' );
@@ -128,11 +133,12 @@ class GW_Post_Content_Merge_Tags {
         return $confirmation;
     }
 
-    function prepare_eid( $entry_id ) {
+    function prepare_eid( $entry_id, $force_encrypt = false ) {
 
         $eid = $entry_id;
+        $do_encrypt = $force_encrypt || $this->_args['encrypt_eid'];
 
-        if( $this->_args['encrypt_eid'] && is_callable( array( 'GFCommon', 'encrypt' ) ) ) {
+        if( $do_encrypt && is_callable( array( 'GFCommon', 'encrypt' ) ) ) {
             $eid = rawurlencode( GFCommon::encrypt( $eid ) );
         }
 
