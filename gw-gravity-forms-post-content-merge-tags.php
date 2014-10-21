@@ -224,7 +224,4 @@ function gw_post_content_merge_tags( $args = array() ) {
     return GW_Post_Content_Merge_Tags::get_instance( $args );
 }
 
-gw_post_content_merge_tags( array(
-    'auto_append_eid' => true, // also accepts false or an array of form IDs
-    'encrypt_eid'     => true
-) );
+gw_post_content_merge_tags();
