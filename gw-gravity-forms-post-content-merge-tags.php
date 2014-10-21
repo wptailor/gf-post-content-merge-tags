@@ -106,7 +106,18 @@ class GW_Post_Content_Merge_Tags {
     }
 
     function replace_encrypt_entry_id_merge_tag( $text, $form, $entry ) {
-        return str_replace( '{encrypted_entry_id}', $this->prepare_eid( $entry['id'], true ), $text );
+
+        if( strpos( $text, '{encrypted_entry_id}' ) === false ) {
+            return $text;
+        }
+
+        // $entry is not always a "full" entry
+        $entry_id = rgar( $entry, 'id' );
+        if( $entry_id ) {
+            $entry_id = $this->prepare_eid( $entry['id'], true );
+        }
+
+        return str_replace( '{encrypted_entry_id}', $entry_id, $text );
     }
 
     function append_eid_parameter( $confirmation, $form, $entry ) {
@@ -213,4 +224,7 @@ function gw_post_content_merge_tags( $args = array() ) {
     return GW_Post_Content_Merge_Tags::get_instance( $args );
 }
 
-gw_post_content_merge_tags();
+gw_post_content_merge_tags( array(
+    'auto_append_eid' => true, // also accepts false or an array of form IDs
+    'encrypt_eid'     => true
+) );
