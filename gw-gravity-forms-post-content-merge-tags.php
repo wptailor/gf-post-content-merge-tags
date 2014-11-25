@@ -8,7 +8,7 @@
  * Setup your confirmation page (requires GFv1.8) or confirmation URL "Redirect Query String" setting to
  * include this parameter: 'eid={entry_id}'. You can then use any entry-based merge tag in your post content.
  *
- * @version   1.1
+ * @version   1.2
  * @author    David Smith <david@gravitywiz.com>
  * @license   GPL-2.0+
  * @link      http://gravitywiz.com/...
@@ -192,9 +192,12 @@ class GW_Post_Content_Merge_Tags {
 
     function maybe_decrypt_entry_id( $entry_id ) {
 
+	    // if encryption is enabled, 'eid' parameter MUST be encrypted
+	    $do_encrypt = $this->_args['encrypt_eid'];
+
         if( ! $entry_id ) {
             return null;
-        } else if( is_numeric( $entry_id ) && intval( $entry_id ) > 0 ) {
+        } else if( ! $do_encrypt && is_numeric( $entry_id ) && intval( $entry_id ) > 0 ) {
             return $entry_id;
         } else {
             // gEYs6Cqzh1akKc7Y4RGkV8HtcJqQZRmNH+ONxuFEvXM
