@@ -1,4 +1,7 @@
 <?php
+
+defined('ABSPATH') or exit;
+
 /**
  * Gravity Wiz // Gravity Forms Post Content Merge Tags
  *
@@ -11,8 +14,7 @@
  * @version   1.2
  * @author    David Smith <david@gravitywiz.com>
  * @license   GPL-2.0+
- * @link      http://gravitywiz.com/...
- * @video     http://screencast.com/t/g6Y12zOf4
+ * @link      https://gist.github.com/spivurno/6893785
  * @copyright 2014 Gravity Wiz
  */
 class GW_Post_Content_Merge_Tags {
@@ -31,9 +33,6 @@ class GW_Post_Content_Merge_Tags {
 
     function __construct( $args ) {
 
-        if( ! class_exists( 'GFForms' ) )
-            return;
-
         $this->_args = wp_parse_args( $args, array(
             'auto_append_eid' => true, // true, false or array of form IDs
             'encrypt_eid'     => false,
@@ -45,7 +44,6 @@ class GW_Post_Content_Merge_Tags {
         if( ! empty( $this->_args['auto_append_eid'] ) ) {
             add_filter( 'gform_confirmation', array( $this, 'append_eid_parameter' ), 20, 3 );
         }
-
     }
 
     function replace_merge_tags( $post_content ) {
@@ -122,7 +120,7 @@ class GW_Post_Content_Merge_Tags {
 
     function append_eid_parameter( $confirmation, $form, $entry ) {
 
-        $is_ajax_redirect = is_string( $confirmation ) && strpos( $confirmation, 'gformRedirect' );
+        $is_ajax_redirect = is_string( $confirmation ) && ( false !== strpos( $confirmation, 'gformRedirect' ) );
         $is_redirect      = is_array( $confirmation ) && isset( $confirmation['redirect'] );
 
         if( ! $this->is_auto_eid_enabled( $form ) || ! ( $is_ajax_redirect || $is_redirect ) ) {
@@ -184,7 +182,7 @@ class GW_Post_Content_Merge_Tags {
 
         $post = get_post();
         if( $post ) {
-            $entry_id = get_post_meta( $post->ID, '_gform-entry-id', true );
+            $entry_id = absint( get_post_meta( $post->ID, '_gform-entry-id', true ) );
         }
 
         return $entry_id ? $entry_id : false;
@@ -226,5 +224,3 @@ class GW_Post_Content_Merge_Tags {
 function gw_post_content_merge_tags( $args = array() ) {
     return GW_Post_Content_Merge_Tags::get_instance( $args );
 }
-
-gw_post_content_merge_tags();
