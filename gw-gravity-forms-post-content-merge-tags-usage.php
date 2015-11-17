@@ -1,5 +1,7 @@
 <?php
 
+defined('ABSPATH') or exit;
+
 # Basic
 gw_post_content_merge_tags();
 

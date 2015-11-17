@@ -1,0 +1,15 @@
+{
+    "name": "entr/gravityforms-post-content-merge-tags",
+    "description": "Adds support for using Gravity Form merge tags in your post content. This functionality requires that the entry ID is passed to the post via the \"eid\" parameter.",
+    "type": "wordpress-plugin",
+    "require": {
+        "composer/installers": "^1.0"
+    },
+    "license": "GPL3+",
+    "authors": [
+        {
+            "name": "Zlatko Zlatev",
+            "email": "zlatko@ralev.com"
+        }
+    ]
+}

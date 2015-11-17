@@ -1,4 +1,7 @@
 <?php
+
+defined('ABSPATH') or exit;
+
 /**
  * Gravity Wiz // Gravity Forms Post Content Merge Tags
  *
@@ -226,5 +229,3 @@ class GW_Post_Content_Merge_Tags {
 function gw_post_content_merge_tags( $args = array() ) {
     return GW_Post_Content_Merge_Tags::get_instance( $args );
 }
-
-gw_post_content_merge_tags();
